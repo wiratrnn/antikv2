@@ -34,12 +34,12 @@ if "df_payoff" not in st.session_state:
 
 ev_values, ranking = calculate_ev(st.session_state.df_payoff, st.session_state.prob)
 
+st.session_state.rekomendasi = f"Statistika {ranking[ranking == 1].index[0]}"
+st.session_state.skor_tertinggi = np.max(ev_values)
 
 if "hasil_kuesioner" not in st.session_state:
     st.session_state.ipk = 3.87
     st.session_state.sks = 104
-    st.session_state.rekomendasi = f"Statistika {ranking[ranking == 1].index[0]}"
-    st.session_state.skor_tertinggi = np.max(ev_values)
 
 st.title("📊 Dashboard AnTikV2", text_alignment='center')
 
