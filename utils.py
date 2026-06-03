@@ -6,6 +6,13 @@ import pandas as pd
 def fn(x):
     return int(x) if float(x).is_integer() else np.round(x, 2)
 
+def softmax(x, temperature=0.35):
+    x = np.asarray(x, dtype=float)
+    x = x / temperature
+    x = x - np.max(x)
+    exp_x = np.exp(x)
+    return exp_x / exp_x.sum()
+
 def card_button(key, icon, title, subtitle):
     active = "active" if st.session_state.risk_attitude == key else ""
     html = f"""
