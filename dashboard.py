@@ -34,6 +34,7 @@ if "df_payoff" not in st.session_state:
 
 ev_values, ranking = calculate_ev(st.session_state.df_payoff, st.session_state.prob)
 
+
 if "hasil_kuesioner" not in st.session_state:
     st.session_state.ipk = 3.87
     st.session_state.sks = 104
@@ -57,7 +58,7 @@ with tab1:
                     icon="<img width='48' height='48' src='https://img.icons8.com/forma-light-sharp/48/C850F2/graduation-cap.png' alt='graduation-cap'/>")
     col_A.metric_card("Total SKS", st.session_state.sks, bg_color="#22C3E6", accent_color="#0000FF", subtext="SKS",
                     icon="<img width='50' height='50' src='https://img.icons8.com/ios/50/22C3E6/open-book--v1.png' alt='open-book--v1'/>")
-    col_B.metric_card("Skor Kecocokan Tertinggi", f"{st.session_state.skor_tertinggi:.2f}%", bg_color="#9FDDAA", accent_color="#40C057", subtext=st.session_state.rekomendasi,
+    col_B.metric_card("Skor Kecocokan Tertinggi", f"{st.session_state.skor_tertinggi:.2f}", bg_color="#9FDDAA", accent_color="#40C057", subtext="Expected Value",
                     icon="<img width='48' height='48' src='https://img.icons8.com/forma-regular/48/40C057/graph.png' alt='graph'/>")
     col_B.metric_card("Rekomendasi Utama", st.session_state.rekomendasi, bg_color="#FFB67A", accent_color="#FF7D00", subtext="Penjurusan Terbaik Untuk Anda",
                     icon="<img width='48' height='48' src='https://img.icons8.com/softteal-line/48/FD7E14/star.png' alt='star'/>")
@@ -66,12 +67,13 @@ with tab1:
     col1, col2 = st.columns(2, gap='small', border=True)
     col1.subheader("🏆 Rekomendasi Peminatan")
     sorted_idx = np.argsort(ev_values)[::-1]
+    rec_score = softmax(ev_values, 35)*100
 
     for rank, idx in enumerate(sorted_idx, start=1):
         col1.recommendation_card(
             medali[rank],
             st.session_state.df_payoff.index[idx],
-            round(ev_values[idx], 2),
+            rec_score[idx],
             warna[rank-1],
             keterangan[rank-1]
         )
@@ -97,7 +99,7 @@ with tab1:
     )
 
     fig.update_layout(
-        title="Probabilitas Karir (state)",
+        title="Peluang karir (state)",
         height=200,
         margin=dict(t=50, b=0, l=0, r=1),
 
@@ -132,7 +134,7 @@ with tab1:
             "Terapan"
         ],
         "Profil Anda": [*ev_values, ev_values[0]],
-        "Rata-rata Mahasiswa": [10, 60, 50, 65, 10]
+        "Rata-rata Mahasiswa": [60, 75, 40, 65, 60]
     })
 
     # Ubah ke format long
@@ -142,6 +144,7 @@ with tab1:
         value_name="Skor"
     )
 
+    ### Radar Map
     fig = px.line_polar(
         df_long,
         r="Skor",
