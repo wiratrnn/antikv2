@@ -48,7 +48,7 @@ matkul_col2 = [
     ("KI", "orange", "Kalkulus Integral"),
     ("AR", "green", "Analisis Regresi"),
     ("PDS", "red", "Pengantar Data Sains"),
-    ("MR", "green", "Metode Numerik"),
+    ("MN", "green", "Metode Numerik"),
     ("ADK", "blue", "Analisis Data Kategorik"),
     ("ADE", "violet", "Analisis Data Eksploratif")
 ]
@@ -62,25 +62,22 @@ GRADE_MAP = {
 
 DIMENSI_MK = {
     "Teori": ["TP", "KD", "KI", "AL", "SM", "MS"],
-    "Komputasi": ["AP", "MR", "PDS", "ADE", "ADK"],
+    "Komputasi": ["AP", "MN", "PDS", "ADE", "ADK"],
     "Terapan": ["MS", "AR", "ADK", "ADE", "PL"],
     "Keuangan": ["AL", "KD", "KI", "PL", "ARW"]
 }
 
-def star_score(x):
-    return (x + 1) / 5
-
 MINAT_WEIGHT = np.array([
-    [0.4,0.2,0.4,0.0],
-    [0.5,0.0,0.0,0.5],
-    [0.3,0.0,0.4,0.3],
-    [0.0,0.8,0.2,0.0],
-    [0.2,0.2,0.4,0.2],
-    [0.0,0.3,0.7,0.0],
-    [0.3,0.3,0.2,0.2],
-    [0.1,0.0,0.2,0.7],
-    [0.4,0.0,0.4,0.2],
-    [0.3,0.3,0.2,0.2]
+    [0.4, 0.2, 0.4, 0  ],
+    [0.5, 0  , 0  , 0.5],
+    [0.3, 0  , 0.4, 0.3],
+    [0  , 0.8, 0.2, 0  ],
+    [0.2, 0.2, 0.4, 0.2],
+    [0  , 0.3, 0.7, 0  ],
+    [0.3, 0.3, 0.2, 0.2],
+    [0.1, 0  , 0.2, 0.7],
+    [0.4, 0  , 0.4, 0.2],
+    [0.3, 0.3, 0.2, 0.2]
 ])
 
 SELF_WEIGHT = np.array([
@@ -96,47 +93,68 @@ SELF_WEIGHT = np.array([
     [0.2,0.2,0.2,0.4]
 ])
 
-def calculate_probability_state(akademik,MinBak,PenDir):
+def minmax_scale(x):
+    x = np.asarray(x, dtype=float)
+    xmin, xmax = x.min(), x.max()
+    if np.isclose(xmax, xmin):
+        return np.zeros_like(x)
+    return (x - xmin) / (xmax - xmin)
+
+def softmax(x, temperature=0.35):
+    x = np.asarray(x, dtype=float)
+    x = x / temperature
+    x = x - np.max(x)
+    exp_x = np.exp(x)
+    return exp_x / exp_x.sum()
+
+def sharpen(x, power=2):
+    x = np.clip(x, 0, 1)
+    return x ** power
+
+def calculate_probability_state(akademik, MinBak, PenDir, temperature=0.40):
     # AKADEMIK
-    ipk_score = akademik["IPK"] / 4
-    sks_score = akademik["SKS"] / 144
+    ipk_score = np.clip(akademik["IPK"] / 4, 0, 1)
+    sks_score = np.clip(akademik["SKS"] / 144, 0, 1)
 
     akademik_score = []
-
     for matkul in DIMENSI_MK.values():
-        nilai_matkul = np.mean([
-            GRADE_MAP[akademik[kode]]
-            for kode in matkul
-        ])
+        nilai_matkul = np.mean([GRADE_MAP[akademik[kode]] for kode in matkul])
 
         skor = (
-            0.65 * nilai_matkul +
-            0.25 * ipk_score +
-            0.1 * sks_score
+            0.85 * nilai_matkul +
+            0.10 * ipk_score +
+            0.05 * sks_score
         )
         akademik_score.append(skor)
 
-    akademik_score = np.array(akademik_score)
+    akademik_score = np.array(akademik_score, dtype=float)
+    akademik_score = sharpen(minmax_scale(akademik_score), power=1.8)
 
     # MINAT & BAKAT
-    minat_vector = np.array([(v + 1) / 5 for v in MinBak.values()])
+    minat_vector = np.array([(v + 1) / 5 for v in MinBak.values()], dtype=float)
     minat_score = minat_vector @ MINAT_WEIGHT
-    minat_score /= MINAT_WEIGHT.sum(axis=0)
+    minat_score = minat_score / MINAT_WEIGHT.sum(axis=0)
+    minat_score = sharpen(minmax_scale(minat_score), power=1.8)
 
     # PENILAIAN DIRI
-    self_vector = np.array([(v + 1) / 5 for v in PenDir.values()])
+    self_vector = np.array([(v + 1) / 5 for v in PenDir.values()], dtype=float)
+
     # reverse item
     self_vector[[4, 9]] = 1 - self_vector[[4, 9]]
+
     self_score = self_vector @ SELF_WEIGHT
-    self_score /= SELF_WEIGHT.sum(axis=0)
+    self_score = self_score / SELF_WEIGHT.sum(axis=0)
+    self_score = sharpen(minmax_scale(self_score), power=1.8)
 
-    # =====================
-    # SKOR AKHIR
-    # =====================
-    raw_score = (0.5 * akademik_score + 0.25 * minat_score + 0.25 * self_score)
-    prob = raw_score / raw_score.sum()
+    # GABUNGAN AKHIR
+    raw_score = (
+        0.50 * akademik_score +
+        0.25 * minat_score +
+        0.25 * self_score
+    )
+
+    prob = softmax(raw_score, temperature=temperature)
     return np.array(prob)
-
 
 with st.form("form_kuesioner", clear_on_submit=False):
     st.title("Form Kuesioner", text_alignment='center')
@@ -202,6 +220,7 @@ with st.form("form_kuesioner", clear_on_submit=False):
             st.error("Mohon berikan rating bintang dan nilai mata kuliah pada semua kriteria sebelum menyimpan!")
         else:
             prob = calculate_probability_state(jawaban_akademik, jawaban_MinBak, jawaban_PenDir)
+            st.session_state.prob = prob
             
             with st.status("Proses data...", expanded=True) as status:
                 st.write("Proses Data Akademik...")
@@ -216,8 +235,7 @@ with st.form("form_kuesioner", clear_on_submit=False):
                 status.update(
                     label="Berhasil Menyimpan!", state="complete", expanded=True
                 )
-                
-            st.session_state.prob = prob
+            
             with st.spinner("Mengarahkan ke dashboard utama..."):
                 time.sleep(2)
             st.switch_page(st.session_state.page_dashboard)
