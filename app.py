@@ -179,9 +179,27 @@ def halaman_utama():
         """,
         unsafe_allow_html=True
     )
-    st.markdown("<h5 style='text-align: center; color: black'>(Anak Statistik Versi 2)</h5>", unsafe_allow_html=True)
-    st.markdown("<h4 style='text-align: center;'>Asisten Penentuan Penjurusan Mahasiswa Statistika👋</h4>", unsafe_allow_html=True)
-    st.markdown("✨ Berdasarkan nilai :orange[**mata kuliah**], :green[**minat-bakat**], dan :blue[**kemampuan diri**]", text_alignment='center')
+
+    st.markdown("""
+      <h5 style='text-align:center; color:black; line-height:0.8;'>
+      (Anak Statistik Versi 2)
+      </h5>
+      """, unsafe_allow_html=True)
+
+    st.markdown("""
+      <h4 style='text-align:center; line-height:0.8;'>
+      Asisten Penentuan Penjurusan Mahasiswa Statistika👋
+      </h4>
+      """, unsafe_allow_html=True)
+
+    st.markdown("""
+      <p style='text-align:center; line-height:0.8;'>
+      ✨ Berdasarkan nilai <span style='color:orange'><b>mata kuliah</b></span>,
+      <span style='color:green'><b>minat-bakat</b></span>, dan
+      <span style='color:blue'><b>kemampuan diri</b></span>
+      </p>
+      """, unsafe_allow_html=True)
+  
     if st.button("❓ Tentang Dashboard", type="secondary", key="info"):
         info()
 
@@ -207,7 +225,7 @@ def halaman_utama():
 
     st.markdown(":violet-background[🌱 Tidak ada pilihan yang sempurna, yang ada adalah pilihan yang paling cocok untukmu. Kenali potensimu dan tentukan arah terbaikmu.✨]",
                 text_alignment='center')
-    st.caption("Made with ❤️ by Wira Triono")
+    st.caption("Made with ❤️ by Wira Triono © 2026 All Rights Reserved")
 
 
 page_home = st.Page(halaman_utama, title="Halaman Utama", icon="🏠", default=True)
